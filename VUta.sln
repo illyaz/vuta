@@ -1,0 +1,60 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33414.496
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VUta.Api", "VUta.Api\VUta.Api.csproj", "{E8DB5934-637C-415F-B298-8C2958324DD6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VUta.Worker", "VUta.Worker\VUta.Worker.csproj", "{7EBB7024-808F-4D61-AFEA-D0174D4A2E9D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VUta.Database", "VUta.Database\VUta.Database.csproj", "{A33E34A2-5AA3-4095-AC37-157BCD8AE6C1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{230B90E9-C0A2-41B7-A504-D86A9176793A}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YoutubeExplode", "YoutubeExplode\YoutubeExplode\YoutubeExplode.csproj", "{BFEF643D-3DF8-4EC7-84AD-D1793224C27D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VUta.Transport", "VUta.Transport\VUta.Transport.csproj", "{B9AB0510-3F1C-44FC-92C8-094686858684}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VUta.ESIndexer", "VUta.ESIndexer\VUta.ESIndexer.csproj", "{595273EC-48BA-4F97-B26A-23A330E7C199}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E8DB5934-637C-415F-B298-8C2958324DD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8DB5934-637C-415F-B298-8C2958324DD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8DB5934-637C-415F-B298-8C2958324DD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E8DB5934-637C-415F-B298-8C2958324DD6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7EBB7024-808F-4D61-AFEA-D0174D4A2E9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EBB7024-808F-4D61-AFEA-D0174D4A2E9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EBB7024-808F-4D61-AFEA-D0174D4A2E9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EBB7024-808F-4D61-AFEA-D0174D4A2E9D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A33E34A2-5AA3-4095-AC37-157BCD8AE6C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A33E34A2-5AA3-4095-AC37-157BCD8AE6C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A33E34A2-5AA3-4095-AC37-157BCD8AE6C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A33E34A2-5AA3-4095-AC37-157BCD8AE6C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BFEF643D-3DF8-4EC7-84AD-D1793224C27D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BFEF643D-3DF8-4EC7-84AD-D1793224C27D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BFEF643D-3DF8-4EC7-84AD-D1793224C27D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BFEF643D-3DF8-4EC7-84AD-D1793224C27D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9AB0510-3F1C-44FC-92C8-094686858684}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9AB0510-3F1C-44FC-92C8-094686858684}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9AB0510-3F1C-44FC-92C8-094686858684}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9AB0510-3F1C-44FC-92C8-094686858684}.Release|Any CPU.Build.0 = Release|Any CPU
+		{595273EC-48BA-4F97-B26A-23A330E7C199}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{595273EC-48BA-4F97-B26A-23A330E7C199}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{595273EC-48BA-4F97-B26A-23A330E7C199}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{595273EC-48BA-4F97-B26A-23A330E7C199}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C7DBBE0E-A585-4EA7-9D92-7318DFF8186D}
+	EndGlobalSection
+EndGlobal

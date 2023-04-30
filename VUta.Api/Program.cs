@@ -1,0 +1,111 @@
+namespace VUta.Api
+{
+    using Humanizer;
+
+    using MassTransit;
+
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Options;
+
+    using Nest;
+
+    using Serilog;
+
+    using VUta.Api.AuthHandlers;
+    using VUta.Api.Controllers;
+    using VUta.Database;
+    using VUta.Transport;
+
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
+            builder.Host.UseSerilog((host, log) => log.ReadFrom.Configuration(host.Configuration, "Logging"));
+
+            builder.Services.AddOptions<RabbitMQOptions>()
+                .BindConfiguration(RabbitMQOptions.Section)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
+            builder.Services.AddOptions<ElasticsearchOptions>()
+                .BindConfiguration(ElasticsearchOptions.Section)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
+            builder.Services.AddOptions<ApiOptions>()
+                .BindConfiguration(ApiOptions.Section)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
+            builder.Services.AddSingleton(s =>
+            {
+                var opts = s.GetRequiredService<IOptions<ElasticsearchOptions>>().Value;
+                var settings = new ConnectionSettings(opts.Host);
+
+                settings.DefaultFieldNameInferrer(InflectorExtensions.Underscore);
+                settings.EnableDebugMode();
+                settings.DefaultMappingFor<ESComment>(i => i.IndexName("comments"));
+
+                if (!string.IsNullOrEmpty(opts.ApiKey))
+                    settings.ApiKeyAuthentication(new(opts.ApiKey));
+                else if (!string.IsNullOrEmpty(opts.Username) && !string.IsNullOrEmpty(opts.Password))
+                    settings.BasicAuthentication(opts.Username, opts.Password);
+
+                return new ElasticClient(settings);
+            });
+
+            builder.Services.AddVUtaDbContext(builder.Configuration.GetConnectionString("Default"));
+            builder.Services.AddMassTransit(mt =>
+            {
+                VUtaConfigurator.Configure(mt);
+                mt.UsingRabbitMq((context, cfg) =>
+                {
+                    var opts = context.GetRequiredService<IOptions<RabbitMQOptions>>().Value;
+                    VUtaConfigurator.Configure(context, cfg);
+                    cfg.Host(opts.Host, opts.VirtualHost, h =>
+                    {
+                        h.Username(opts.Username ?? "guest");
+                        h.Password(opts.Password ?? "guest");
+                        h.ConfigureBatchPublish(x =>
+                        {
+                            x.Enabled = true;
+                            x.Timeout = TimeSpan.FromMilliseconds(2);
+                        });
+                    });
+
+                    cfg.AutoStart = true;
+                });
+
+            });
+
+            builder.Services.AddControllers();
+            builder.Services.AddRequestDecompression();
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
+            builder.Services
+                .AddAuthentication("VUta")
+                .AddScheme<VUtaAuthSchemeOptions, VUtaAuthHandler>("VUta", o =>
+                {
+                    o.Secret = builder.Configuration
+                        .GetSection(ApiOptions.Section)
+                        .GetValue(nameof(ApiOptions.Secret), Guid.NewGuid().ToString())!;
+                });
+
+            var app = builder.Build();
+            app.UseSerilogRequestLogging();
+            app.UseRequestDecompression();
+
+            // Configure the HTTP request pipeline.
+
+            app.UseSwagger();
+            app.UseSwaggerUI();
+
+            app.UseHttpsRedirection();
+            app.UseAuthorization();
+            app.MapControllers();
+            app.Run();
+        }
+    }
+}

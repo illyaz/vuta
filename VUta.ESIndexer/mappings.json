@@ -1,0 +1,212 @@
+﻿{
+	"videos": {
+		"settings": {
+			"index": {
+				"refresh_interval": "30s",
+				"number_of_shards": "1",
+				"analysis": {
+					"normalizer": {
+						"keyword_lowercase": {
+							"filter": [
+								"lowercase"
+							],
+							"type": "custom"
+						}
+					},
+					"analyzer": {
+						"trigram_analyzer": {
+							"filter": [
+								"lowercase",
+								"unique"
+							],
+							"tokenizer": "trigram"
+						},
+						"text_analyzer": {
+							"filter": [
+								"lowercase",
+								"unique"
+							],
+							"tokenizer": "standard"
+						}
+					},
+					"tokenizer": {
+						"trigram": {
+							"type": "ngram",
+							"min_gram": "3",
+							"max_gram": "3"
+						}
+					}
+				},
+				"number_of_replicas": "1"
+			}
+		},
+		"mappings": {
+			"dynamic": "false",
+			"properties": {
+				"channel_id": {
+					"type": "keyword"
+				},
+				"title": {
+					"type": "text",
+					"fields": {
+						"trigram": {
+							"type": "text",
+							"analyzer": "trigram_analyzer"
+						}
+					},
+					"analyzer": "text_analyzer"
+				},
+				"publish_date": { "type": "date" },
+				"last_update": { "type": "date" }
+			}
+		}
+	},
+	"channels": {
+		"settings": {
+			"index": {
+				"refresh_interval": "30s",
+				"number_of_shards": "1",
+				"analysis": {
+					"normalizer": {
+						"keyword_lowercase": {
+							"filter": [
+								"lowercase"
+							],
+							"type": "custom"
+						}
+					},
+					"analyzer": {
+						"trigram_analyzer": {
+							"filter": [
+								"lowercase",
+								"unique"
+							],
+							"tokenizer": "trigram"
+						},
+						"text_analyzer": {
+							"filter": [
+								"lowercase",
+								"unique"
+							],
+							"tokenizer": "standard"
+						}
+					},
+					"tokenizer": {
+						"trigram": {
+							"type": "ngram",
+							"min_gram": "3",
+							"max_gram": "3"
+						}
+					}
+				},
+				"number_of_replicas": "1"
+			}
+		},
+		"mappings": {
+			"dynamic": "false",
+			"properties": {
+				"title": {
+					"type": "text",
+					"fields": {
+						"trigram": {
+							"type": "text",
+							"analyzer": "trigram_analyzer"
+						}
+					},
+					"analyzer": "text_analyzer"
+				},
+				"last_update": { "type": "date" }
+			}
+		}
+	},
+	"comments": {
+		"settings": {
+			"index": {
+				"refresh_interval": "30s",
+				"number_of_shards": "1",
+				"analysis": {
+					"normalizer": {
+						"keyword_lowercase": {
+							"filter": [
+								"lowercase"
+							],
+							"type": "custom"
+						}
+					},
+					"analyzer": {
+						"trigram_analyzer": {
+							"char_filter": [
+								"timestamp_filter"
+							],
+							"filter": [
+								"lowercase",
+								"unique"
+							],
+							"tokenizer": "trigram"
+						},
+						"text_analyzer": {
+							"char_filter": [
+								"timestamp_filter"
+							],
+							"filter": [
+								"lowercase",
+								"unique"
+							],
+							"tokenizer": "standard"
+						}
+					},
+					"tokenizer": {
+						"trigram": {
+							"type": "ngram",
+							"min_gram": "3",
+							"max_gram": "3"
+						}
+					},
+					"char_filter": {
+						"timestamp_filter": {
+							"type": "pattern_replace",
+							"pattern": "((\\d{1,2}:)?\\d{1,2}:\\d{2})",
+							"replacement": ""
+						}
+					}
+				},
+				"number_of_replicas": "1"
+			}
+		},
+		"mappings": {
+			"dynamic": "false",
+			"properties": {
+				"video_id": {
+					"type": "keyword"
+				},
+				"channel_id": {
+					"type": "keyword"
+				},
+				"text": {
+					"type": "text",
+					"term_vector": "with_positions_offsets",
+					"fields": {
+						"trigram": {
+							"type": "text",
+							"analyzer": "trigram_analyzer",
+							"term_vector": "with_positions_offsets"
+						}
+					},
+					"analyzer": "text_analyzer"
+				},
+				"like_count": {
+					"type": "long"
+				},
+				"last_update": {
+					"type": "date"
+				},
+				"video_publish_date": {
+					"type": "date"
+				},
+				"video_is_uta": {
+					"type": "boolean"
+				}
+			}
+		}
+	}
+}
