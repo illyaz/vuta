@@ -1,0 +1,3 @@
+[submodule "YoutubeExplode"]
+	path = YoutubeExplode
+	url = https://github.com/illyaz/YoutubeExplode.git
