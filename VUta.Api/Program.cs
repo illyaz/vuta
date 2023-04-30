@@ -93,7 +93,14 @@ namespace VUta.Api
                         .GetValue(nameof(ApiOptions.Secret), Guid.NewGuid().ToString())!;
                 });
 
+            builder.Services
+                .AddCors(o => o.AddDefaultPolicy(p => p
+                    .AllowAnyOrigin()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()));
+
             var app = builder.Build();
+            app.UseCors();
             app.UseSerilogRequestLogging();
             app.UseRequestDecompression();
 
