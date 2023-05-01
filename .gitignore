@@ -397,3 +397,6 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 docker/.env
+docker/pgdata
+docker/esdata
+docker/rmqdata
