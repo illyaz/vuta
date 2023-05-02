@@ -1,6 +1,5 @@
 ﻿namespace VUta.Api.Controllers
 {
-    using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
 
@@ -45,7 +44,9 @@
                 .MultiMatch(mm => mm
                 .Query(query)
                 .Type(TextQueryType.Phrase)
-                .Fields(f => f.Field("text.*"))));
+                .Fields(fs => fs
+                    .Field(f => f.Text)
+                    .Field(f => f.Text.Suffix("trigram")))));
 
             var result = await _elastic.SearchAsync<ESComment>(d => d
                 .From(50 * page)
@@ -75,37 +76,39 @@
                             .Field(f => f.Text.Suffix("trigram")))
                         .Type(HighlighterType.Fvh)
                         .FragmentSize(10000)
-                        .NumberOfFragments(1))));
+                        .NumberOfFragments(1000))));
 
-            Response.Headers.Add("X-ES-TOOK", result.Took.ToString());
-            Response.Headers.Add("X-ES-TOTAL", result.Total.ToString());
-
-            if (result.Total == 0)
-                return Ok(Array.Empty<string>());
+            if (!result.IsValid)
+                return StatusCode(StatusCodes.Status503ServiceUnavailable);
 
             var hitVideoIds = result.Hits
                 .Select(x => x.Source.VideoId)
                 .Distinct()
                 .ToArray();
 
-            var videos = await _db.Videos
+            var videos = hitVideoIds.Any() ? (await _db.Videos
                 .AsNoTracking()
                 .Where(x => hitVideoIds.Contains(x.Id))
                 .Select(x => new { x.Id, x.Title, x.PublishDate, x.LastUpdate, ChannelTitle = x.Channel.Title })
-                .ToDictionaryAsync(k => k.Id, v => v);
+                .ToDictionaryAsync(k => k.Id, v => v)) : new();
 
-            return Ok(result.Hits
-                .Select(hit => new
-                {
-                    Id = hit.Id,
-                    VideoId = hit.Source.VideoId,
-                    ChannelId = hit.Source.ChannelId,
-                    ChannelTitle = videos[hit.Source.VideoId].ChannelTitle,
-                    VideoTitle = videos[hit.Source.VideoId].Title,
-                    VideoPublishDate = videos[hit.Source.VideoId].PublishDate,
-                    VideoLastUpdate = videos[hit.Source.VideoId].LastUpdate,
-                    HighlightedText = string.Join(string.Empty, hit.Highlight["text"]).Trim()
-                }));
+            return Ok(new
+            {
+                Took = result.Took,
+                Total = result.Total,
+                Hits = result.Hits
+                    .Select(hit => new
+                    {
+                        Id = hit.Id,
+                        VideoId = hit.Source.VideoId,
+                        ChannelId = hit.Source.ChannelId,
+                        ChannelTitle = videos[hit.Source.VideoId].ChannelTitle,
+                        VideoTitle = videos[hit.Source.VideoId].Title,
+                        VideoPublishDate = videos[hit.Source.VideoId].PublishDate,
+                        VideoLastUpdate = videos[hit.Source.VideoId].LastUpdate,
+                        HighlightedText = string.Join(string.Empty, hit.Highlight["text"]).Trim()
+                    })
+            });
         }
     }
 
