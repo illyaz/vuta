@@ -64,12 +64,10 @@
                     channel.Title = channelMeta.Title;
                     channel.Thumbnail = channelMeta.Thumbnails[0].Url;
 
-                    if (lastVideoPublish > DateTime.UtcNow.AddDays(-1))
+                    if (lastVideoPublish > DateTime.UtcNow.AddDays(-2))
                         channel.NextUpdate = DateTime.UtcNow.AddHours(3);
-                    else if (lastVideoPublish > DateTime.UtcNow.AddDays(-2))
-                        channel.NextUpdate = DateTime.UtcNow.AddHours(6);
                     else if (lastVideoPublish > DateTime.UtcNow.AddDays(-3))
-                        channel.NextUpdate = DateTime.UtcNow.AddHours(12);
+                        channel.NextUpdate = DateTime.UtcNow.AddHours(6);
                     else if (lastVideoPublish > DateTime.UtcNow.AddDays(-7))
                         channel.NextUpdate = DateTime.UtcNow.AddDays(1);
                     else if (lastVideoPublish > DateTime.UtcNow.AddDays(-14))

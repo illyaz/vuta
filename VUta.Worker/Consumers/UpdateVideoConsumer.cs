@@ -88,16 +88,18 @@
                     video.LastUpdate = DateTime.UtcNow;
                     video.NextUpdateId = null;
 
-                    if (video.PublishDate > DateTime.UtcNow.AddDays(-1))
+                    if (video.PublishDate > DateTime.UtcNow.AddDays(-3))
                         video.NextUpdate = DateTime.UtcNow.AddHours(1);
-                    else if (video.PublishDate > DateTime.UtcNow.AddDays(-2))
+                    else if (video.PublishDate > DateTime.UtcNow.AddDays(-4))
+                        video.NextUpdate = DateTime.UtcNow.AddHours(3);
+                    else if (video.PublishDate > DateTime.UtcNow.AddDays(-5))
                         video.NextUpdate = DateTime.UtcNow.AddHours(6);
-                    else if (video.PublishDate > DateTime.UtcNow.AddDays(-3))
-                        video.NextUpdate = DateTime.UtcNow.AddHours(12);
                     else if (video.PublishDate > DateTime.UtcNow.AddDays(-7))
-                        video.NextUpdate = DateTime.UtcNow.AddDays(1);
+                        video.NextUpdate = DateTime.UtcNow.AddDays(12);
                     else if (video.PublishDate > DateTime.UtcNow.AddDays(-14))
                         video.NextUpdate = DateTime.UtcNow.AddDays(3);
+                    else if (video.PublishDate > DateTime.UtcNow.AddDays(-30))
+                        video.NextUpdate = DateTime.UtcNow.AddDays(7);
                     else
                         video.NextUpdate = null;
 
