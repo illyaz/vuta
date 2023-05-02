@@ -26,7 +26,7 @@
 
         [HttpGet("comments")]
         public async Task<IActionResult> CommentsAsync(
-            [FromQuery] string query,
+            [FromQuery] string? query,
             [FromQuery, Range(-1, 1)] int sort = 0,
             [FromQuery, Range(0, 199)] int page = 0,
             [FromQuery] bool? isUta = null,
@@ -40,22 +40,30 @@
             if (channelId != null)
                 mustDescriptor.Add(q => q.Term(t => t.ChannelId, channelId));
 
-            mustDescriptor.Add(q => q
-                .MultiMatch(mm => mm
-                .Query(query)
-                .Type(TextQueryType.Phrase)
-                .Fields(fs => fs
-                    .Field(f => f.Text)
-                    .Field(f => f.Text.Suffix("trigram")))));
+            if (!string.IsNullOrEmpty(query))
+                mustDescriptor.Add(q => q
+                    .MultiMatch(mm => mm
+                    .Query(query)
+                    .Type(TextQueryType.Phrase)
+                    .Fields(fs => fs
+                        .Field(f => f.Text)
+                        .Field(f => f.Text.Suffix("trigram")))));
 
             var result = await _elastic.SearchAsync<ESComment>(d => d
                 .From(50 * page)
                 .Size(50)
                 .Source(s => s
-                    .Includes(i => i
-                        .Field(f => f.VideoId)
-                        .Field(f => f.ChannelId)
-                        .Field(f => f.VideoPublishDate)))
+                    .Includes(i =>
+                    {
+                        i
+                            .Field(f => f.VideoId)
+                            .Field(f => f.ChannelId)
+                            .Field(f => f.VideoPublishDate);
+
+                        if (string.IsNullOrEmpty(query))
+                            i.Field(f => f.Text);
+                        return i;
+                    }))
                 .Query(q => q
                     .Bool(b => b
                         .Must(mustDescriptor.ToArray())))
@@ -106,7 +114,9 @@
                         VideoTitle = videos[hit.Source.VideoId].Title,
                         VideoPublishDate = videos[hit.Source.VideoId].PublishDate,
                         VideoLastUpdate = videos[hit.Source.VideoId].LastUpdate,
-                        HighlightedText = string.Join(string.Empty, hit.Highlight["text"]).Trim()
+                        HighlightedText = hit.Highlight.ContainsKey("text")
+                            ? string.Join(string.Empty, hit.Highlight["text"]).Trim()
+                            : hit.Source.Text.Trim()
                     })
             });
         }
