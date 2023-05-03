@@ -85,8 +85,6 @@
                     video.Title = videoMeta.Title;
                     video.IsUta = _utaList.Any(replacedTitle.Contains);
                     video.PublishDate = videoMeta.UploadDate.DateTime.ToUniversalTime();
-                    video.LastUpdate = DateTime.UtcNow;
-                    video.NextUpdateId = null;
 
                     if (video.PublishDate > DateTime.UtcNow.AddDays(-3))
                         video.NextUpdate = DateTime.UtcNow.AddHours(1);
@@ -100,6 +98,8 @@
                         video.NextUpdate = DateTime.UtcNow.AddDays(3);
                     else if (video.PublishDate > DateTime.UtcNow.AddDays(-30))
                         video.NextUpdate = DateTime.UtcNow.AddDays(7);
+                    else if (video.PublishDate > DateTime.UtcNow.AddDays(-90))
+                        video.NextUpdate = DateTime.UtcNow.AddDays(14);
                     else
                         video.NextUpdate = null;
 
@@ -107,9 +107,15 @@
                 }
                 catch (VideoUnavailableException)
                 {
-                    video.LastUpdate = DateTime.UtcNow;
-                    video.NextUpdateId = null;
+                    video.UnavailableSince ??= DateTime.UtcNow;
+                    if (video.UnavailableSince > DateTime.UtcNow.AddDays(-30))
+                        video.NextUpdate = DateTime.UtcNow.AddDays(1);
+                    else
+                        video.NextUpdate = null;
                 }
+
+                video.LastUpdate = DateTime.UtcNow;
+                video.NextUpdateId = null;
 
                 await _db.SaveChangesAsync(context.CancellationToken);
 

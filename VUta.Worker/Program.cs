@@ -71,7 +71,9 @@
                         })));
 
                     services.AddHostedService<VideoNextUpdateProducerBackgroundService>();
+                    services.AddHostedService<VideoNextUpdateStuckProducerBackgroundService>();
                     services.AddHostedService<ChannelNextUpdateProducerBackgroundService>();
+                    services.AddHostedService<ChannelNextUpdateStuckProducerBackgroundService>();
                 })
                 .Build();
 

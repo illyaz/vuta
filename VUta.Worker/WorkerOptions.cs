@@ -32,6 +32,12 @@
 
             [Required]
             public bool ChannelNextUpdate { get; set; } = true;
+
+            [Required]
+            public bool VideoNextUpdateStuck { get; set; } = true;
+
+            [Required]
+            public bool ChannelNextUpdateStuck { get; set; } = true;
         }
 
         [Required]

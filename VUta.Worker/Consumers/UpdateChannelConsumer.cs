@@ -84,7 +84,11 @@
                 }
                 catch (ChannelUnavailableException)
                 {
-                    channel.NextUpdate = DateTime.UtcNow.AddDays(30);
+                    channel.UnavailableSince ??= DateTime.UtcNow;
+                    if (channel.UnavailableSince >  DateTime.UtcNow.AddDays(-30))
+                        channel.NextUpdate = DateTime.UtcNow.AddDays(1);
+                    else
+                        channel.NextUpdate = null;
                 }
 
                 channel.LastUpdate = DateTime.UtcNow;

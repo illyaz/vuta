@@ -15,6 +15,7 @@
         public string Title { get; set; } = null!;
         public DateTime PublishDate { get; set; }
 
+        public DateTime? UnavailableSince { get; set; }
         public DateTime? LastCommentScan { get; set; }
         public DateTime? NextCommentScan { get; set; }
         public DateTime? LastUpdate { get; set; }

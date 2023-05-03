@@ -16,6 +16,7 @@
         public string Thumbnail { get; set; } = null!;
         public virtual List<Video> Videos { get; set; } = new();
 
+        public DateTime? UnavailableSince { get; set; }
         public DateTime? LastVideoScan { get; set; }
         public DateTime? NextVideoScan { get; set; }
         public DateTime? LastUpdate { get; set; }
