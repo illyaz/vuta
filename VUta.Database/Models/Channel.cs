@@ -2,6 +2,7 @@
 {
     using Microsoft.EntityFrameworkCore;
 
+    [Index(nameof(Handle))]
     [Index(nameof(LastVideoScan))]
     [Index(nameof(NextVideoScan))]
     [Index(nameof(LastUpdate))]
@@ -10,6 +11,7 @@
     public class Channel
     {
         public string Id { get; set; } = null!;
+        public string? Handle { get; set; }
         public string Title { get; set; } = null!;
         public string Thumbnail { get; set; } = null!;
         public virtual List<Video> Videos { get; set; } = new();

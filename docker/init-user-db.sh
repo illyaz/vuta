@@ -175,6 +175,17 @@ PGPASSWORD=1234 psql -v ON_ERROR_STOP=1 --username vuta --dbname vuta <<-EOSQL
 
     COMMIT;
 
+    START TRANSACTION;
+
+    ALTER TABLE channels ADD handle text NULL;
+
+    CREATE INDEX ix_channels_handle ON channels (handle);
+
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20230503052237_addChannelHandle', '7.0.5');
+
+    COMMIT;
+    
     CREATE PUBLICATION es_indexer_pub FOR TABLE videos, channels, comments;
     SELECT * FROM pg_create_logical_replication_slot('es_indexer_slot', 'pgoutput');
 EOSQL

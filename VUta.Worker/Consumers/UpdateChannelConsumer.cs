@@ -63,6 +63,7 @@
 
                     channel.Title = channelMeta.Title;
                     channel.Thumbnail = channelMeta.Thumbnails[0].Url;
+                    channel.Handle = channelMeta.Handle;
 
                     if (lastVideoPublish > DateTime.UtcNow.AddDays(-2))
                         channel.NextUpdate = DateTime.UtcNow.AddHours(3);

@@ -38,7 +38,21 @@
                 mustDescriptor.Add(q => q.Term(t => t.VideoIsUta, isUta.Value));
 
             if (channelId != null)
+            {
+                if (channelId.StartsWith('@'))
+                {
+                    var handle = channelId[1..];
+                    var channelIdFromHandle = await _db.Channels
+                        .Where(x => x.Handle == handle)
+                        .Select(x => x.Id)
+                        .FirstOrDefaultAsync();
+
+                    if (channelIdFromHandle != null)
+                        channelId = channelIdFromHandle;
+                }
+
                 mustDescriptor.Add(q => q.Term(t => t.ChannelId, channelId));
+            }
 
             if (!string.IsNullOrEmpty(query))
                 mustDescriptor.Add(q => q
