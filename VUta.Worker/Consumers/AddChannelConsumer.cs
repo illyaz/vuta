@@ -37,15 +37,18 @@
                 var id = context.Message.Id;
 
                 var channel = null as Channel;
-                if (ChannelHandle.TryParse(id) is ChannelHandle handle)
+                if (ChannelId.TryParse(id) is ChannelId channelId)
+                    channel = await _youtube.Channels
+                        .GetInnertubeAsync(channelId);
+                else if (id.StartsWith("@"))
+                    channel = await _youtube.Channels
+                        .GetByHandleAsync(id[1..]);
+                else if (ChannelHandle.TryParse(id) is ChannelHandle handle)
                     channel = await _youtube.Channels
                         .GetByHandleAsync(handle);
                 else if (ChannelSlug.TryParse(id) is ChannelSlug slug)
                     channel = await _youtube.Channels
                         .GetBySlugAsync(slug);
-                else if (ChannelId.TryParse(id) is ChannelId channelId)
-                    channel = await _youtube.Channels
-                        .GetInnertubeAsync(channelId);
                 else
                 {
                     _logger.LogWarning("Invalid channel identifier");
