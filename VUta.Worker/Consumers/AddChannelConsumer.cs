@@ -10,6 +10,7 @@
     using VUta.Transport.Messages;
 
     using YoutubeExplode;
+    using YoutubeExplode.Channels;
     using YoutubeExplode.Exceptions;
 
     public class AddChannelConsumer
@@ -34,8 +35,25 @@
             try
             {
                 var id = context.Message.Id;
-                var channel = await _youtube.Channels
-                    .GetInnertubeAsync(id);
+
+                var channel = null as Channel;
+                if (ChannelHandle.TryParse(id) is ChannelHandle handle)
+                    channel = await _youtube.Channels
+                        .GetByHandleAsync(handle);
+                else if (ChannelSlug.TryParse(id) is ChannelSlug slug)
+                    channel = await _youtube.Channels
+                        .GetBySlugAsync(slug);
+                else if (ChannelId.TryParse(id) is ChannelId channelId)
+                    channel = await _youtube.Channels
+                        .GetInnertubeAsync(channelId);
+                else
+                {
+                    _logger.LogWarning("Invalid channel identifier");
+                    if (context.IsResponseAccepted<AddChannelResult>())
+                        await context.RespondAsync<AddChannelResult>(new(false, null, "Invalid channel identifier"));
+
+                    return;
+                }
 
                 var result = await _db.Channels
                     .Upsert(new()
