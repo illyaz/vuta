@@ -1,6 +1,9 @@
 ﻿namespace VUta.Api.Controllers
 {
+    using Elasticsearch.Net;
+
     using Microsoft.AspNetCore.Mvc;
+    using Microsoft.AspNetCore.Mvc.RazorPages;
     using Microsoft.EntityFrameworkCore;
 
     using Nest;
@@ -134,6 +137,52 @@
                     })
             });
         }
+
+        [HttpGet("channels")]
+        public async Task<IActionResult> ChannelsAsync(
+            [FromQuery] string query,
+            [FromQuery, Range(0, 399)] int page = 0)
+        {
+            var mustDescriptor = new List<Func<QueryContainerDescriptor<ESChannel>, QueryContainer>>();
+            var shouldDescriptor = new List<Func<QueryContainerDescriptor<ESChannel>, QueryContainer>>();
+
+            mustDescriptor.Add(q => q
+                .MultiMatch(mm => mm
+                .Query(query)
+                .Fields(fs => fs
+                    .Field(f => f.Title)
+                    .Field(f => f.Title.Suffix("trigram")))));
+
+            shouldDescriptor.Add(q => q
+                .MultiMatch(mm => mm
+                .Query(query)
+                .Fields(fs => fs
+                    .Field(f => f.Title))
+                .Type(TextQueryType.PhrasePrefix)));
+
+            var result = await _elastic.SearchAsync<ESChannel>(d => d
+                .From(25 * page)
+                .Size(25)
+                .Source(true)
+                .Query(q => q
+                    .Bool(b => b
+                        .Must(mustDescriptor.ToArray())
+                        .Should(shouldDescriptor.ToArray())))
+                .Sort(f => f.Field(new("_score"), SortOrder.Descending)));
+
+            return Ok(new
+            {
+                Took = result.Took,
+                Total = result.Total,
+                Hits = result.Hits
+                    .Select(hit => new
+                    {
+                        Id = hit.Id,
+                        Title = hit.Source.Title,
+                        Thumbnail = hit.Source.Thumbnail.Replace("=s900", "=s96")
+                    })
+            });
+        }
     }
 
     public class ESComment
@@ -144,6 +193,13 @@
         public string ChannelId { get; set; } = null!;
         public string Text { get; set; } = null!;
         public int LikeCount { get; set; }
+        public DateTime LastUpdate { get; set; }
+    }
+
+    public class ESChannel
+    {
+        public string Title { get; set; } = null!;
+        public string Thumbnail { get; set; } = null!;
         public DateTime LastUpdate { get; set; }
     }
 }
