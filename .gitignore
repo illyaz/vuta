@@ -400,3 +400,5 @@ docker/.env
 docker/pgdata
 docker/esdata
 docker/rmqdata
+
+appsettings.Local.json

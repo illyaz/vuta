@@ -22,6 +22,7 @@ namespace VUta.Api
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.Configuration.AddJsonFile("appsettings.Local.json", true, true);
             builder.Host.UseSerilog((host, log) => log.ReadFrom.Configuration(host.Configuration, "Logging"));
 
             builder.Services.AddOptions<RabbitMQOptions>()
