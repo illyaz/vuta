@@ -46,8 +46,11 @@ namespace VUta.Api
                 var settings = new ConnectionSettings(opts.Host);
 
                 settings.DefaultFieldNameInferrer(InflectorExtensions.Underscore);
+#if DEBUG
                 settings.EnableDebugMode();
+#endif
                 settings.DefaultMappingFor<ESComment>(i => i.IndexName("comments"));
+                settings.DefaultMappingFor<ESChannel>(i => i.IndexName("channels"));
 
                 if (!string.IsNullOrEmpty(opts.ApiKey))
                     settings.ApiKeyAuthentication(new(opts.ApiKey));
