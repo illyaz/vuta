@@ -180,10 +180,10 @@
                         Id = hit.Id,
                         Title = hit.Source.Title,
                         Description = hit.Source.Description,
-                        VideoCount = hit.Source.VideoCount,
-                        SubscriberCount = hit.Source.SubscriberCount,
+                        VideoCount = long.Parse(hit.Source.VideoCount),
+                        SubscriberCount = hit.Source.SubscriberCount == null ? null as long? : long.Parse(hit.Source.SubscriberCount),
                         Thumbnail = hit.Source.Thumbnail.Replace("=s900", "=s96"),
-                        Banner = hit.Source.Banner
+                        Banner = hit.Source.Banner?.Replace("=w2560", "=w1060")
                     })
             });
         }
@@ -204,10 +204,10 @@
     {
         public string Title { get; set; } = null!;
         public string Description { get; set; } = null!;
-        public long VideoCount { get; set; }
-        public long? SubscriberCount { get; set; }
+        public string VideoCount { get; set; } = null!;
+        public string? SubscriberCount { get; set; }
         public string Thumbnail { get; set; } = null!;
-        public string Banner { get; set; } = null!;
+        public string? Banner { get; set; } = null!;
         public DateTime? LastUpdate { get; set; }
     }
 }
