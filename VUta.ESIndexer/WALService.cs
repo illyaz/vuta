@@ -48,11 +48,11 @@ namespace VUta.ESIndexer
         {
             { "id", async v => await v.Get<string>() },
             { "title", async v => await v.Get<string>() },
-            { "description", async v => await v.Get<string>() },
+            { "description", async v => v.IsDBNull ? null : await v.Get<string>() },
             { "video_count", async v => await v.Get<string>() },
             { "subscriber_count", async v => v.IsDBNull ? null : await v.Get<string>() },
             { "thumbnail", async v => await v.Get<string>() },
-            { "banner", async v => await v.Get<string>() },
+            { "banner", async v => v.IsDBNull ? null : await v.Get<string>() },
             { "last_update", _dateTimeParse }
         };
 
