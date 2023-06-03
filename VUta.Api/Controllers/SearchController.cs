@@ -179,7 +179,11 @@
                     {
                         Id = hit.Id,
                         Title = hit.Source.Title,
-                        Thumbnail = hit.Source.Thumbnail.Replace("=s900", "=s96")
+                        Description = hit.Source.Description,
+                        VideoCount = hit.Source.VideoCount,
+                        SubscriberCount = hit.Source.SubscriberCount,
+                        Thumbnail = hit.Source.Thumbnail.Replace("=s900", "=s96"),
+                        Banner = hit.Source.Banner
                     })
             });
         }
@@ -199,7 +203,11 @@
     public class ESChannel
     {
         public string Title { get; set; } = null!;
+        public string Description { get; set; } = null!;
+        public long VideoCount { get; set; }
+        public long? SubscriberCount { get; set; }
         public string Thumbnail { get; set; } = null!;
+        public string Banner { get; set; } = null!;
         public DateTime? LastUpdate { get; set; }
     }
 }

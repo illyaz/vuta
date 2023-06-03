@@ -13,7 +13,11 @@
         public string Id { get; set; } = null!;
         public string? Handle { get; set; }
         public string Title { get; set; } = null!;
+        public string Description { get; set; } = null!;
+        public long VideoCount { get; set; }
+        public long? SubscriberCount { get; set; }
         public string Thumbnail { get; set; } = null!;
+        public string? Banner { get; set; }
         public virtual List<Video> Videos { get; set; } = new();
 
         public DateTime? UnavailableSince { get; set; }

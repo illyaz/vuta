@@ -197,6 +197,21 @@ PGPASSWORD=1234 psql -v ON_ERROR_STOP=1 --username vuta --dbname vuta <<-EOSQL
 
     COMMIT;
     
+	START TRANSACTION;
+
+	ALTER TABLE channels ADD banner text NULL;
+
+	ALTER TABLE channels ADD description text NOT NULL DEFAULT '';
+
+	ALTER TABLE channels ADD subscriber_count bigint NULL;
+
+	ALTER TABLE channels ADD video_count bigint NOT NULL DEFAULT 0;
+
+	INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+	VALUES ('20230603085220_extendChannelInfo', '7.0.5');
+
+	COMMIT;
+
     CREATE PUBLICATION es_indexer_pub FOR TABLE videos, channels, comments;
     SELECT * FROM pg_create_logical_replication_slot('es_indexer_slot', 'pgoutput');
 EOSQL

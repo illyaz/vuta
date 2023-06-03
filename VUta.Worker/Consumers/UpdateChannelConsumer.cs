@@ -62,7 +62,11 @@
                         .GetInnertubeAsync(id, context.CancellationToken);
 
                     channel.Title = channelMeta.Title;
+                    channel.Description = channelMeta.Description;
+                    channel.VideoCount = channelMeta.VideoCount ?? 0;
+                    channel.SubscriberCount = channelMeta.SubscriberCount;
                     channel.Thumbnail = channelMeta.Thumbnails[0].Url;
+                    channel.Banner = channelMeta.Banners.LastOrDefault()?.Url;
                     channel.Handle = channelMeta.Handle;
 
                     if (lastVideoPublish > DateTime.UtcNow.AddDays(-2))
@@ -85,7 +89,7 @@
                 catch (ChannelUnavailableException)
                 {
                     channel.UnavailableSince ??= DateTime.UtcNow;
-                    if (channel.UnavailableSince >  DateTime.UtcNow.AddDays(-30))
+                    if (channel.UnavailableSince > DateTime.UtcNow.AddDays(-30))
                         channel.NextUpdate = DateTime.UtcNow.AddDays(1);
                     else
                         channel.NextUpdate = null;
