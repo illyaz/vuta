@@ -77,6 +77,16 @@
                     .Distinct()
                     .ToDictionary(k => k, _ => default(AdditionalVideoFields));
 
+                var additionalChannelFields = items
+                    .Where(x => x.Index == "channels" && (string?)x.Data["description"] == "__unchanged_toasted")
+                    .Select(x =>
+                    {
+                        x.Data["description"] = default;
+                        return (string)x.Data["id"]!;
+                    })
+                    .Distinct()
+                    .ToDictionary(k => k, _ => (string?)null);
+
                 if (additionalVideoFields.Any())
                 {
                     using var scope = _serviceProvider.CreateScope();
@@ -85,6 +95,16 @@
                         .AsNoTracking()
                         .Where(x => additionalVideoFields.Keys.Contains(x.Id))
                         .ToDictionaryAsync(k => k.Id, v => new AdditionalVideoFields(v.ChannelId, v.PublishDate, v.IsUta)))!;
+                }
+
+                if (additionalChannelFields.Any())
+                {
+                    using var scope = _serviceProvider.CreateScope();
+                    var db = scope.ServiceProvider.GetRequiredService<VUtaDbContext>();
+                    additionalChannelFields = (await db.Channels
+                        .AsNoTracking()
+                        .Where(x => additionalChannelFields.Keys.Contains(x.Id))
+                        .ToDictionaryAsync(k => k.Id, v => v.Description))!;
                 }
 
                 _batchTriggerTimer.Change(3000, 3000);
@@ -108,13 +128,20 @@
                     else
                     {
                         if (item.Index == "comments"
-                            && additionalVideoFields.TryGetValue((string)item.Data["video_id"]!, out var additional)
-                            && additional != default)
+                            && additionalVideoFields.TryGetValue((string)item.Data["video_id"]!, out var additionalVideo)
+                            && additionalVideo != default)
                         {
-                            item.Data.TryAdd("channel_id", additional.ChannelId);
-                            item.Data.TryAdd("video_publish_date", additional.PublishDate);
-                            item.Data.TryAdd("video_is_uta", additional.IsUta);
+                            item.Data.TryAdd("channel_id", additionalVideo.ChannelId);
+                            item.Data.TryAdd("video_publish_date", additionalVideo.PublishDate);
+                            item.Data.TryAdd("video_is_uta", additionalVideo.IsUta);
                         }
+                        else if (item.Index == "channels"
+                            && additionalChannelFields.TryGetValue((string)item.Data["id"]!, out var additionalChannel)
+                            && additionalChannel != default)
+                        {
+                            item.Data["description"] = additionalChannel;
+                        }
+
                         data.Write(JsonSerializer.SerializeToUtf8Bytes(new
                         {
                             index = new

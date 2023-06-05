@@ -48,7 +48,9 @@ namespace VUta.ESIndexer
         {
             { "id", async v => await v.Get<string>() },
             { "title", async v => await v.Get<string>() },
-            { "description", async v => v.IsDBNull ? null : await v.Get<string>() },
+            { "description", async v => {
+                return v.IsDBNull ? null : v.IsUnchangedToastedValue ? "__unchanged_toasted" : await v.Get<string>();
+            } },
             { "video_count", async v => await v.Get<string>() },
             { "subscriber_count", async v => v.IsDBNull ? null : await v.Get<string>() },
             { "thumbnail", async v => await v.Get<string>() },
@@ -60,7 +62,7 @@ namespace VUta.ESIndexer
         {
             { "id", async v => await v.Get<string>() },
             { "video_id", async v => await v.Get<string>() },
-            { "text", async v => await v.Get<string>() },
+            { "text", async v => v.IsDBNull ? null : await v.Get<string>() },
             { "like_count", async v => await v.Get<string>() },
             { "last_update", _dateTimeParse }
         };
