@@ -1,9 +1,6 @@
 ﻿namespace VUta.Api.Controllers
 {
-    using Elasticsearch.Net;
-
     using Microsoft.AspNetCore.Mvc;
-    using Microsoft.AspNetCore.Mvc.RazorPages;
     using Microsoft.EntityFrameworkCore;
 
     using Nest;
