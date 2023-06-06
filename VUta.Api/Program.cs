@@ -40,6 +40,11 @@ namespace VUta.Api
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
 
+            builder.Services.AddOptions<BoonOptions>()
+                .BindConfiguration(BoonOptions.Section)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
             builder.Services.AddSingleton(s =>
             {
                 var opts = s.GetRequiredService<IOptions<ElasticsearchOptions>>().Value;
@@ -84,6 +89,7 @@ namespace VUta.Api
 
             });
 
+            builder.Services.AddHttpClient();
             builder.Services.AddControllers();
             builder.Services.AddRequestDecompression();
             builder.Services.AddEndpointsApiExplorer();
