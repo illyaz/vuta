@@ -63,6 +63,7 @@
                     {
                         Id = channel.Id,
                         Title = channel.Title,
+                        Description = "",
                         Thumbnail = channel.Thumbnails.First().Url
                     })
                     .AllowIdentityMatch()
