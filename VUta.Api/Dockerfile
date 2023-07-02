@@ -19,6 +19,12 @@ FROM build AS publish
 RUN dotnet publish "VUta.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
+
+# OpenCV dependencies
+RUN apt update && \
+	apt -y install libgeotiff-dev libdc1394-dev libavcodec-dev libswscale-dev libavformat-dev libgtk-3-dev libvtk9 && \
+	rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "VUta.Api.dll"]
