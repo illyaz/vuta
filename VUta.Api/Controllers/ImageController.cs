@@ -1,26 +1,24 @@
 ﻿namespace VUta.Api.Controllers
 {
-    using Microsoft.AspNetCore.Mvc;
-    using Microsoft.Extensions.Options;
+    using Emgu.CV;
+    using Emgu.CV.Structure;
 
-    using SixLabors.ImageSharp.Formats.Jpeg;
+    using Microsoft.AspNetCore.Mvc;
+
+    using SixLabors.ImageSharp.Drawing.Processing;
 
     using System.Net;
-    using System.Text.Json;
 
     [ApiController]
     [Route("[controller]")]
     public class ImageController : ControllerBase
     {
         private readonly HttpClient _http;
-        private readonly IOptionsSnapshot<BoonOptions> _boonOptions;
         private readonly static string[] _imageResolutions = new[] { "hq720.jpg", "hqdefault.jpg", "mqdefault.jpg" };
 
-        public ImageController(HttpClient http,
-            IOptionsSnapshot<BoonOptions> boonOptions)
+        public ImageController(HttpClient http)
         {
             _http = http;
-            _boonOptions = boonOptions;
         }
 
         private async Task<Image?> GetThumbnailAsync(string videoId, CancellationToken cancellation)
@@ -46,66 +44,64 @@
             return null;
         }
 
-        private record BoonRect(int X, int Y, int W, int H);
-
-        private async Task<BoonRect[]?> GetFacesAsync(
-            string videoId,
-            CancellationToken cancellation)
-        {
-            if (_boonOptions.Value.FaceDetectionEndpoint == null)
-                return null;
-
-            try
-            {
-                using var req = new HttpRequestMessage(HttpMethod.Get, $"{_boonOptions.Value.FaceDetectionEndpoint}/anime/{videoId}");
-                if (!string.IsNullOrEmpty(_boonOptions.Value.FaceDetectionKey))
-                    req.Headers.TryAddWithoutValidation("this-is-boon4681", _boonOptions.Value.FaceDetectionKey);
-
-                using var res = await _http.SendAsync(req, cancellation);
-                return await res.Content.ReadFromJsonAsync<BoonRect[]>(new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                }, cancellation);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
         [HttpGet("square/{videoId}.{ext}")]
         public async Task<IActionResult> GetSquareAsync(
             string videoId,
             string ext,
-            CancellationToken cancellation)
+            [FromQuery]
+            bool showFaces = false,
+            CancellationToken cancellation = default)
         {
             if (!Configuration.Default.ImageFormatsManager.TryFindFormatByFileExtension(ext, out var format))
                 return BadRequest("Unsupported format");
 
             var getThumbnail = GetThumbnailAsync(videoId, cancellation);
-            var getFaces = GetFacesAsync(videoId, cancellation);
 
+            using var cascadeClassifier = new CascadeClassifier(Path.Combine("Resources", "lbpcascade_animeface.xml"));
             using var img = await getThumbnail;
+
             if (img == null)
                 return NotFound();
 
-            var faces = await getFaces;
-            var w = img.Width;
-            var h = img.Height;
-            var size = Math.Min(w, h);
-            var face = (faces?.Any() ?? false) ? (size == h ? faces.OrderBy(x => x.X).First() : faces.OrderBy(x => x.Y).First()) : null;
-            var left = (w - size) / 2;
-            var top = (h - size) / 2;
-
-            if (face != null)
+            using var imgGray = img.CloneAs<L8>();
+            var rawGray = new byte[imgGray.Width * imgGray.Height];
+            imgGray.CopyPixelDataTo(rawGray);
+            var depthImage = new Image<Gray, byte>(imgGray.Width, imgGray.Height)
             {
-                if (size == h) left = Math.Max(0, Math.Min((face.X > left) ? face.X : face.X - face.W, (w - size) * 2)) / 2;
-                if (size == w) top = Math.Max(0, Math.Min((face.Y > top) ? face.Y : face.Y - face.H, (h - size) * 2)) / 2;
-            }
+                Bytes = rawGray
+            };
 
-            img.Mutate(ctx => ctx
-                .Crop(new(left, top, size, size))
-                .Resize(512, 512));
+            var faces = cascadeClassifier.DetectMultiScale(depthImage,
+                minNeighbors: 1,
+                minSize: new(100, 100));
+
+            if (showFaces)
+                img.Mutate(ctx =>
+                {
+                    foreach (var face in faces)
+                    {
+                        ctx.Draw(Color.Red, 2, new Rectangle(face.Left, face.Top, face.Width, face.Height));
+                    }
+                });
+            else
+            {
+                var w = img.Width;
+                var h = img.Height;
+                var size = Math.Min(w, h);
+                var face = faces.Any() ? (size == h ? faces.OrderBy(x => x.X).First() : faces.OrderBy(x => x.Y).First()) : default;
+                var left = (w - size) / 2;
+                var top = (h - size) / 2;
+
+                if (face != default)
+                {
+                    if (size == h) left = Math.Max(0, Math.Min((face.X > left) ? face.X : face.X - face.Width, (w - size) * 2)) / 2;
+                    if (size == w) top = Math.Max(0, Math.Min((face.Y > top) ? face.Y : face.Y - face.Height, (h - size) * 2)) / 2;
+                }
+
+                img.Mutate(ctx => ctx
+                    .Crop(new(left, top, size, size))
+                    .Resize(512, 512));
+            }
 
             var resizeStream = new MemoryStream();
             await img.SaveAsync(resizeStream, format, cancellation);

@@ -40,11 +40,6 @@ namespace VUta.Api
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
 
-            builder.Services.AddOptions<BoonOptions>()
-                .BindConfiguration(BoonOptions.Section)
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
-
             builder.Services.AddSingleton(s =>
             {
                 var opts = s.GetRequiredService<IOptions<ElasticsearchOptions>>().Value;
