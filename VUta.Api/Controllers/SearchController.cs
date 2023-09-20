@@ -27,7 +27,7 @@
         [HttpGet("comments")]
         public async Task<IActionResult> CommentsAsync(
             [FromQuery] string? query,
-            [FromQuery, Range(-1, 1)] int sort = 0,
+            [FromQuery, Range(-2, 2)] int sort = 0,
             [FromQuery, Range(0, 199)] int page = 0,
             [FromQuery] bool? isUta = null,
             [FromQuery] string? channelId = null)
