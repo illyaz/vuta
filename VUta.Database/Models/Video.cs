@@ -14,6 +14,7 @@
         public bool IsUta { get; set; }
         public string Title { get; set; } = null!;
         public DateTime PublishDate { get; set; }
+        public long ViewCount { get; set; }
 
         public DateTime? UnavailableSince { get; set; }
         public DateTime? LastCommentScan { get; set; }

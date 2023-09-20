@@ -84,6 +84,7 @@
                     var replacedTitle = NonWorldRegex().Replace(video.Title, string.Empty);
                     video.Title = videoMeta.Title;
                     video.IsUta = _utaList.Any(replacedTitle.Contains);
+                    video.ViewCount = videoMeta.Engagement.ViewCount;
                     video.PublishDate = videoMeta.UploadDate.DateTime.ToUniversalTime();
 
                     if (video.PublishDate > DateTime.UtcNow.AddDays(-3))

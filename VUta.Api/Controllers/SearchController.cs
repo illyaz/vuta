@@ -87,6 +87,10 @@
                         s.Ascending(f => f.VideoPublishDate);
                     else if (sort == 1)
                         s.Descending(f => f.VideoPublishDate);
+                    else if (sort == -2)
+                        s.Ascending(f => f.VideoViewCount);
+                    else if (sort == 2)
+                        s.Descending(f => f.VideoViewCount);
 
                     return s.Field(new("_score"), SortOrder.Descending);
                 })
@@ -111,7 +115,7 @@
             var videos = hitVideoIds.Any() ? (await _db.Videos
                 .AsNoTracking()
                 .Where(x => hitVideoIds.Contains(x.Id))
-                .Select(x => new { x.Id, x.Title, x.PublishDate, x.LastUpdate, ChannelTitle = x.Channel.Title })
+                .Select(x => new { x.Id, x.Title, x.PublishDate, x.ViewCount, x.LastUpdate, ChannelTitle = x.Channel.Title })
                 .ToDictionaryAsync(k => k.Id, v => v)) : new();
 
             return Ok(new
@@ -127,6 +131,7 @@
                         ChannelTitle = videos[hit.Source.VideoId].ChannelTitle,
                         VideoTitle = videos[hit.Source.VideoId].Title,
                         VideoPublishDate = videos[hit.Source.VideoId].PublishDate,
+                        VideoViewCount = videos[hit.Source.VideoId].ViewCount,
                         VideoLastUpdate = videos[hit.Source.VideoId].LastUpdate,
                         HighlightedText = hit.Highlight.ContainsKey("text")
                             ? string.Join(string.Empty, hit.Highlight["text"]).Trim()
@@ -190,6 +195,7 @@
     {
         public string VideoId { get; set; } = null!;
         public bool VideoIsUta { get; set; }
+        public long VideoViewCount { get; set; }
         public DateTime VideoPublishDate { get; set; }
         public string ChannelId { get; set; } = null!;
         public string Text { get; set; } = null!;

@@ -57,6 +57,7 @@
           "analyzer": "text_analyzer"
         },
         "publish_date": { "type": "date" },
+        "view_count": { "type": "long" },
         "last_update": { "type": "date" }
       }
     }
@@ -212,6 +213,7 @@
         "last_update": {
           "type": "date"
         },
+        "video_view_count": { "type": "long" },
         "video_publish_date": {
           "type": "date"
         },

@@ -55,7 +55,7 @@
             _indexerCompletion = new();
         }
 
-        private record AdditionalVideoFields(string ChannelId, DateTime PublishDate, bool IsUta);
+        private record AdditionalVideoFields(string ChannelId, DateTime PublishDate, bool IsUta, long ViewCount);
 
         private async Task BulkAsync(ESIndexerData[] items)
         {
@@ -94,7 +94,7 @@
                     additionalVideoFields = (await db.Videos
                         .AsNoTracking()
                         .Where(x => additionalVideoFields.Keys.Contains(x.Id))
-                        .ToDictionaryAsync(k => k.Id, v => new AdditionalVideoFields(v.ChannelId, v.PublishDate, v.IsUta)))!;
+                        .ToDictionaryAsync(k => k.Id, v => new AdditionalVideoFields(v.ChannelId, v.PublishDate, v.IsUta, v.ViewCount)))!;
                 }
 
                 if (additionalChannelFields.Any())
@@ -134,6 +134,7 @@
                             item.Data.TryAdd("channel_id", additionalVideo.ChannelId);
                             item.Data.TryAdd("video_publish_date", additionalVideo.PublishDate);
                             item.Data.TryAdd("video_is_uta", additionalVideo.IsUta);
+                            item.Data.TryAdd("video_view_count", additionalVideo.ViewCount);
                         }
                         else if (item.Index == "channels"
                             && additionalChannelFields.TryGetValue((string)item.Data["id"]!, out var additionalChannel)
