@@ -84,6 +84,7 @@
                     else
                         channel.NextUpdate = DateTime.UtcNow.AddDays(1);
 
+                    channel.UnavailableSince = null;
                     exists = true;
                 }
                 catch (ChannelUnavailableException)
