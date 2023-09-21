@@ -64,17 +64,21 @@
                         Id = channel.Id,
                         Title = channel.Title,
                         Description = "",
-                        Thumbnail = channel.Thumbnails.First().Url
+                        Thumbnail = channel.Thumbnails.First().Url,
+                        NextUpdate = DateTime.UtcNow
                     })
                     .AllowIdentityMatch()
-                    .NoUpdate()
+                    .WhenMatched(v => new()
+                    {
+                        NextUpdate = DateTime.UtcNow
+                    })
                     .RunAsync(context.CancellationToken);
 
                 var added = result != 0;
 
                 // Perform full channel scan
                 if (added)
-                    await context.Publish<ScanChannelVideo>(new(id, true), context.CancellationToken);
+                    await context.Publish<ScanChannelVideo>(new(channel.Id, true), context.CancellationToken);
 
                 if (context.IsResponseAccepted<AddChannelResult>())
                     await context.RespondAsync<AddChannelResult>(new(
