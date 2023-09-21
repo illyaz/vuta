@@ -40,7 +40,7 @@
                 await foreach (var batch in _youtube.Playlists.GetVideoBatchesAsync(uploadPlaylistId, context.CancellationToken))
                 {
                     firstBatch = false;
-                    _logger.LogInformation("Playlist scanned: {ChannelId}, {LastId}", channelId, batch.Items.Last().Id);
+                    _logger.LogInformation("Playlist scanned: {ChannelId}, {LastId}", uploadPlaylistId, batch.Items.Last().Id);
                     var videoIds = batch.Items.Select(x => (string)x.Id).ToArray();
                     var existsIds = await _db.Videos
                         .Where(x => videoIds.Contains(x.Id))
