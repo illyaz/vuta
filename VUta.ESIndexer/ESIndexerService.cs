@@ -69,7 +69,7 @@
                 _logger.LogInformation("Indexing {Count} searchable object - {Lsn}", items.Length, lastLsn);
 
                 var additionalVideoFields = items
-                    .Where(x => x.Index == "comments" && (
+                    .Where(x => !x.IsDeleted && x.Index == "comments" && (
                         !x.Data.ContainsKey("channel_id")
                         || !x.Data.ContainsKey("video_publish_date")
                         || !x.Data.ContainsKey("video_is_uta")))
@@ -78,7 +78,7 @@
                     .ToDictionary(k => k, _ => default(AdditionalVideoFields));
 
                 var additionalChannelFields = items
-                    .Where(x => x.Index == "channels" && (string?)x.Data["description"] == "__unchanged_toasted")
+                    .Where(x => !x.IsDeleted && x.Index == "channels" && (string?)x.Data["description"] == "__unchanged_toasted")
                     .Select(x =>
                     {
                         x.Data["description"] = default;
