@@ -90,7 +90,7 @@
                     if (video.PublishDate > DateTime.UtcNow.AddDays(-1))
                         video.NextUpdate = DateTime.UtcNow.AddMinutes(15);
                     else if (video.PublishDate > DateTime.UtcNow.AddDays(-3))
-                        video.NextUpdate = DateTime.UtcNow.AddHours(1);
+                        video.NextUpdate = DateTime.UtcNow.AddMinutes(30);
                     else if (video.PublishDate > DateTime.UtcNow.AddDays(-4))
                         video.NextUpdate = DateTime.UtcNow.AddHours(3);
                     else if (video.PublishDate > DateTime.UtcNow.AddDays(-5))

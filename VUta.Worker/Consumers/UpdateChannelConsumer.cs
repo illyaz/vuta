@@ -70,17 +70,13 @@
                     channel.Handle = channelMeta.Handle;
 
                     if (lastVideoPublish > DateTime.UtcNow.AddDays(-2))
-                        channel.NextUpdate = DateTime.UtcNow.AddHours(3);
+                        channel.NextUpdate = DateTime.UtcNow.AddHours(1);
                     else if (lastVideoPublish > DateTime.UtcNow.AddDays(-3))
-                        channel.NextUpdate = DateTime.UtcNow.AddHours(6);
+                        channel.NextUpdate = DateTime.UtcNow.AddHours(3);
                     else if (lastVideoPublish > DateTime.UtcNow.AddDays(-7))
-                        channel.NextUpdate = DateTime.UtcNow.AddDays(1);
-                    else if (lastVideoPublish > DateTime.UtcNow.AddDays(-14))
-                        channel.NextUpdate = DateTime.UtcNow.AddDays(3);
-                    else if (lastVideoPublish > DateTime.UtcNow.AddDays(-30))
                         channel.NextUpdate = DateTime.UtcNow.AddDays(6);
-                    else if (lastVideoPublish > DateTime.UtcNow.AddDays(-180))
-                        channel.NextUpdate = DateTime.UtcNow.AddDays(30);
+                    else if (lastVideoPublish > DateTime.UtcNow.AddDays(-14))
+                        channel.NextUpdate = DateTime.UtcNow.AddDays(1);
                     else
                         channel.NextUpdate = DateTime.UtcNow.AddDays(1);
 
