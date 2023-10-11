@@ -9,8 +9,8 @@
         public VUtaDbContext(DbContextOptions options)
             : base(options) { }
 
-        public DbSet<Channel> Channels { get; set; }
-        public DbSet<Video> Videos { get; set; }
-        public DbSet<Comment> Comments { get; set; }
+        public DbSet<Channel> Channels { get; set; } = null!;
+        public DbSet<Video> Videos { get; set; } = null!;
+        public DbSet<Comment> Comments { get; set; } = null!;
     }
 }
