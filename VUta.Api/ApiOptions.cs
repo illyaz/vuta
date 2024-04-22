@@ -1,12 +1,10 @@
-﻿namespace VUta.Api
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace VUta.Api;
+
+public class ApiOptions
 {
-    using System.ComponentModel.DataAnnotations;
+    public static string Section = "Api";
 
-    public class ApiOptions
-    {
-        public static string Section = "Api";
-
-        [Required]
-        public string Secret { get; set; } = null!;
-    }
+    [Required] public string Secret { get; set; } = null!;
 }

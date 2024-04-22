@@ -1,97 +1,99 @@
-﻿namespace VUta.Worker.Consumers
+﻿using MassTransit;
+using Microsoft.EntityFrameworkCore;
+using VUta.Database;
+using VUta.Transport.Messages;
+using YoutubeExplode;
+using YoutubeExplode.Channels;
+using YoutubeExplode.Exceptions;
+
+namespace VUta.Worker.Consumers;
+
+public class AddChannelConsumer
+    : IConsumer<AddChannel>
 {
-    using MassTransit;
+    private readonly VUtaDbContext _db;
+    private readonly ILogger<AddChannelConsumer> _logger;
+    private readonly YoutubeClient _youtube;
 
-    using Microsoft.EntityFrameworkCore;
-
-    using System.Threading.Tasks;
-
-    using VUta.Database;
-    using VUta.Transport.Messages;
-
-    using YoutubeExplode;
-    using YoutubeExplode.Channels;
-    using YoutubeExplode.Exceptions;
-
-    public class AddChannelConsumer
-        : IConsumer<AddChannel>
+    public AddChannelConsumer(
+        ILogger<AddChannelConsumer> logger,
+        VUtaDbContext db,
+        YoutubeClient youtube)
     {
-        private readonly ILogger<AddChannelConsumer> _logger;
-        private readonly VUtaDbContext _db;
-        private readonly YoutubeClient _youtube;
+        _logger = logger;
+        _db = db;
+        _youtube = youtube;
+    }
 
-        public AddChannelConsumer(
-            ILogger<AddChannelConsumer> logger,
-            VUtaDbContext db,
-            YoutubeClient youtube)
+    public async Task Consume(ConsumeContext<AddChannel> context)
+    {
+        try
         {
-            _logger = logger;
-            _db = db;
-            _youtube = youtube;
-        }
+            var id = context.Message.Id;
 
-        public async Task Consume(ConsumeContext<AddChannel> context)
-        {
-            try
+            var channel = null as Channel;
+            if (ChannelId.TryParse(id) is ChannelId channelId)
             {
-                var id = context.Message.Id;
+                channel = await _youtube.Channels
+                    .GetInnertubeAsync(channelId);
+            }
+            else if (id.StartsWith("@"))
+            {
+                channel = await _youtube.Channels
+                    .GetByHandleAsync(id[1..]);
+            }
+            else if (ChannelHandle.TryParse(id) is ChannelHandle handle)
+            {
+                channel = await _youtube.Channels
+                    .GetByHandleAsync(handle);
+            }
+            else if (ChannelSlug.TryParse(id) is ChannelSlug slug)
+            {
+                channel = await _youtube.Channels
+                    .GetBySlugAsync(slug);
+            }
+            else
+            {
+                _logger.LogWarning("Invalid channel identifier");
+                if (context.IsResponseAccepted<AddChannelResult>())
+                    await context.RespondAsync(new AddChannelResult(false, null, "Invalid channel identifier"));
 
-                var channel = null as Channel;
-                if (ChannelId.TryParse(id) is ChannelId channelId)
-                    channel = await _youtube.Channels
-                        .GetInnertubeAsync(channelId);
-                else if (id.StartsWith("@"))
-                    channel = await _youtube.Channels
-                        .GetByHandleAsync(id[1..]);
-                else if (ChannelHandle.TryParse(id) is ChannelHandle handle)
-                    channel = await _youtube.Channels
-                        .GetByHandleAsync(handle);
-                else if (ChannelSlug.TryParse(id) is ChannelSlug slug)
-                    channel = await _youtube.Channels
-                        .GetBySlugAsync(slug);
-                else
+                return;
+            }
+
+            var result = await _db.Channels
+                .Upsert(new Database.Models.Channel
                 {
-                    _logger.LogWarning("Invalid channel identifier");
-                    if (context.IsResponseAccepted<AddChannelResult>())
-                        await context.RespondAsync<AddChannelResult>(new(false, null, "Invalid channel identifier"));
+                    Id = channel.Id,
+                    Title = channel.Title,
+                    Description = "",
+                    Thumbnail = channel.Thumbnails.First().Url,
+                    NextUpdate = DateTime.UtcNow
+                })
+                .AllowIdentityMatch()
+                .WhenMatched(v => new Database.Models.Channel
+                {
+                    NextUpdate = DateTime.UtcNow
+                })
+                .RunAsync(context.CancellationToken);
 
-                    return;
-                }
+            var added = result != 0;
 
-                var result = await _db.Channels
-                    .Upsert(new()
-                    {
-                        Id = channel.Id,
-                        Title = channel.Title,
-                        Description = "",
-                        Thumbnail = channel.Thumbnails.First().Url,
-                        NextUpdate = DateTime.UtcNow
-                    })
-                    .AllowIdentityMatch()
-                    .WhenMatched(v => new()
-                    {
-                        NextUpdate = DateTime.UtcNow
-                    })
-                    .RunAsync(context.CancellationToken);
+            // Perform full channel scan
+            if (added)
+                await context.Publish(new ScanChannelVideo(channel.Id, true), context.CancellationToken);
 
-                var added = result != 0;
-
-                // Perform full channel scan
-                if (added)
-                    await context.Publish<ScanChannelVideo>(new(channel.Id, true), context.CancellationToken);
-
-                if (context.IsResponseAccepted<AddChannelResult>())
-                    await context.RespondAsync<AddChannelResult>(new(
-                        !added, new(
-                            channel.Title,
-                            channel.Thumbnails.First().Url)));
-            }
-            catch (ChannelUnavailableException ex)
-            {
-                _logger.LogWarning(ex, "An error occurred while adding channel");
-                if (context.IsResponseAccepted<AddChannelResult>())
-                    await context.RespondAsync<AddChannelResult>(new(false, null, ex.Message));
-            }
+            if (context.IsResponseAccepted<AddChannelResult>())
+                await context.RespondAsync<AddChannelResult>(new AddChannelResult(
+                    !added, new AddChannelResultInfo(
+                        channel.Title,
+                        channel.Thumbnails.First().Url)));
+        }
+        catch (ChannelUnavailableException ex)
+        {
+            _logger.LogWarning(ex, "An error occurred while adding channel");
+            if (context.IsResponseAccepted<AddChannelResult>())
+                await context.RespondAsync(new AddChannelResult(false, null, ex.Message));
         }
     }
 }

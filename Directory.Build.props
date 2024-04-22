@@ -1,13 +1,13 @@
 ﻿<Project>
-  <PropertyGroup>
-    <Version>0.0.1</Version>
-    <Company>Illyaz</Company>
-    <Copyright>Copyright (C) Illyaz</Copyright>
-    <LangVersion>latest</LangVersion>
-    <Nullable>enable</Nullable>
-    <WarningsAsErrors>nullable</WarningsAsErrors>
-    <CheckEolTargetFramework>false</CheckEolTargetFramework>
-    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Version>0.0.1</Version>
+        <Company>Illyaz</Company>
+        <Copyright>Copyright (C) Illyaz</Copyright>
+        <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
+        <WarningsAsErrors>nullable</WarningsAsErrors>
+        <CheckEolTargetFramework>false</CheckEolTargetFramework>
+        <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
 </Project>

@@ -1,33 +1,32 @@
-﻿namespace VUta.Database
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace VUta.Database;
+
+public static class Extensions
 {
-    using Microsoft.EntityFrameworkCore;
-    using Microsoft.EntityFrameworkCore.Query;
-    using Microsoft.Extensions.DependencyInjection;
-
-    using System.Linq;
-
-    public static class Extensions
+    public static LockingClauseQueryBuilder<T> For<T>(this IQueryable<T> query)
     {
-        public static LockingClauseQueryBuilder<T> For<T>(this IQueryable<T> query)
-            => new(query);
+        return new LockingClauseQueryBuilder<T>(query);
+    }
 
-        public static IServiceCollection AddVUtaDbContext(this IServiceCollection services,
-            string? connectionString,
-            Action<DbContextOptionsBuilder>? optionsAction = null)
+    public static IServiceCollection AddVUtaDbContext(this IServiceCollection services,
+        string? connectionString,
+        Action<DbContextOptionsBuilder>? optionsAction = null)
+    {
+        services.AddDbContext<VUtaDbContext>(opts =>
         {
-            services.AddDbContext<VUtaDbContext>(opts =>
-            {
-                opts.UseNpgsql(connectionString);
-                opts.UseSnakeCaseNamingConvention();
-                opts.ReplaceService<IQuerySqlGeneratorFactory, VUtaNpgsqlQuerySqlGeneratorFactory>();
+            opts.UseNpgsql(connectionString);
+            opts.UseSnakeCaseNamingConvention();
+            opts.ReplaceService<IQuerySqlGeneratorFactory, VUtaNpgsqlQuerySqlGeneratorFactory>();
 #if DEBUG
-                opts.EnableSensitiveDataLogging();
+            opts.EnableSensitiveDataLogging();
 #endif
-                if (optionsAction != null)
-                    optionsAction(opts);
-            });
+            if (optionsAction != null)
+                optionsAction(opts);
+        });
 
-            return services;
-        }
+        return services;
     }
 }

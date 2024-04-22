@@ -1,4 +1,3 @@
-﻿namespace VUta.Transport.Messages
-{
-    public record ScanVideoComment(string Id);
-}
+﻿namespace VUta.Transport.Messages;
+
+public record ScanVideoComment(string Id);

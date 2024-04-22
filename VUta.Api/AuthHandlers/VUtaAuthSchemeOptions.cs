@@ -1,10 +1,9 @@
-﻿namespace VUta.Api.AuthHandlers
-{
-    using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 
-    public class VUtaAuthSchemeOptions
-        : AuthenticationSchemeOptions
-    {
-        public string Secret { get; set; } = null!;
-    }
+namespace VUta.Api.AuthHandlers;
+
+public class VUtaAuthSchemeOptions
+    : AuthenticationSchemeOptions
+{
+    public string Secret { get; set; } = null!;
 }

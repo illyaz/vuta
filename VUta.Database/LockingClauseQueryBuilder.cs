@@ -1,50 +1,61 @@
-﻿namespace VUta.Database
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace VUta.Database;
+
+public class LockingClauseQueryBuilder<T>
 {
-    using Microsoft.EntityFrameworkCore;
-
-    using System.Linq;
-
-    public class LockingClauseQueryBuilder<T>
+    public LockingClauseQueryBuilder(IQueryable<T> query)
     {
-        public IQueryable<T> Query { get; }
+        Query = query;
+    }
 
-        public LockingClauseQueryBuilder(IQueryable<T> query)
+    public IQueryable<T> Query { get; }
+
+    public LockStrengthQueryBuilder<T> Update()
+    {
+        return new LockStrengthQueryBuilder<T>(this, "UPDATE");
+    }
+
+    public LockStrengthQueryBuilder<T> NoKeyUpdate()
+    {
+        return new LockStrengthQueryBuilder<T>(this, "NO KEY UPDATE");
+    }
+
+    public LockStrengthQueryBuilder<T> Share()
+    {
+        return new LockStrengthQueryBuilder<T>(this, "SHARE");
+    }
+
+    public LockStrengthQueryBuilder<T> KeyShare()
+    {
+        return new LockStrengthQueryBuilder<T>(this, "KEY SHARE");
+    }
+
+    public class LockStrengthQueryBuilder<T>
+    {
+        private readonly LockingClauseQueryBuilder<T> clauseBuilder;
+
+        public LockStrengthQueryBuilder(LockingClauseQueryBuilder<T> clauseBuilder, string clause)
         {
-            Query = query;
+            this.clauseBuilder = clauseBuilder;
+            Clause = clause;
         }
 
-        public LockStrengthQueryBuilder<T> Update()
-            => new(this, "UPDATE");
+        public string Clause { get; }
 
-        public LockStrengthQueryBuilder<T> NoKeyUpdate()
-            => new(this, "NO KEY UPDATE");
-
-        public LockStrengthQueryBuilder<T> Share()
-            => new(this, "SHARE");
-
-        public LockStrengthQueryBuilder<T> KeyShare()
-            => new(this, "KEY SHARE");
-
-        public class LockStrengthQueryBuilder<T>
+        public IQueryable<T> Wait()
         {
-            private readonly LockingClauseQueryBuilder<T> clauseBuilder;
+            return clauseBuilder.Query.TagWith($"__FOR:{Clause}");
+        }
 
-            public LockStrengthQueryBuilder(LockingClauseQueryBuilder<T> clauseBuilder, string clause)
-            {
-                this.clauseBuilder = clauseBuilder;
-                Clause = clause;
-            }
+        public IQueryable<T> NoWait()
+        {
+            return clauseBuilder.Query.TagWith($"__FOR:{Clause} NOWAIT");
+        }
 
-            public string Clause { get; }
-
-            public IQueryable<T> Wait()
-                => clauseBuilder.Query.TagWith($"__FOR:{Clause}");
-
-            public IQueryable<T> NoWait()
-                => clauseBuilder.Query.TagWith($"__FOR:{Clause} NOWAIT");
-
-            public IQueryable<T> SkipLocked()
-                => clauseBuilder.Query.TagWith($"__FOR:{Clause} SKIP LOCKED");
+        public IQueryable<T> SkipLocked()
+        {
+            return clauseBuilder.Query.TagWith($"__FOR:{Clause} SKIP LOCKED");
         }
     }
 }
