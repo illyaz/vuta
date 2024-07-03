@@ -38,7 +38,7 @@ public class SearchController : ControllerBase
         {
             if (channelId.StartsWith('@'))
             {
-                var handle = channelId[1..];
+                var handle = channelId[1..].ToLowerInvariant();
                 var channelIdFromHandle = await _db.Channels
                     .Where(x => x.Handle == handle)
                     .Select(x => x.Id)
