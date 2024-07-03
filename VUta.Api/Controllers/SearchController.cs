@@ -7,7 +7,7 @@ using VUta.Database;
 namespace VUta.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("search")]
 public class SearchController : ControllerBase
 {
     private readonly VUtaDbContext _db;

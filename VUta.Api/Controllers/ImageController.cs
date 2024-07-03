@@ -8,7 +8,7 @@ using Size = System.Drawing.Size;
 namespace VUta.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("image")]
 public class ImageController : ControllerBase
 {
     private static readonly string[] _imageResolutions = { "hq720.jpg", "hqdefault.jpg", "mqdefault.jpg" };

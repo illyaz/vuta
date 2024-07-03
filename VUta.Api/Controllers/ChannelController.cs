@@ -6,7 +6,7 @@ using VUta.Transport.Messages;
 namespace VUta.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("channel")]
 [Authorize]
 public class ChannelController : ControllerBase
 {

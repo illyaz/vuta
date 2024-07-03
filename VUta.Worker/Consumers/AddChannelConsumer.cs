@@ -62,10 +62,7 @@ public class AddChannelConsumer
                         NextUpdate = DateTime.UtcNow
                     })
                     .AllowIdentityMatch()
-                    .WhenMatched(v => new Database.Models.Channel
-                    {
-                        NextUpdate = DateTime.UtcNow
-                    })
+                    .NoUpdate()
                     .RunAsync(context.CancellationToken);
 
                 var added = result != 0;
@@ -73,7 +70,9 @@ public class AddChannelConsumer
                 // Perform full channel scan
                 if (added)
                     await context.Publish(new ScanChannelVideo(channel.Id, true), context.CancellationToken);
-
+                else
+                    await context.Publish(new UpdateChannel(channel.Id, true));
+                
                 if (context.IsResponseAccepted<AddChannelResult>())
                     await context.RespondAsync(new AddChannelResult(
                         !added, new AddChannelResultInfo(
