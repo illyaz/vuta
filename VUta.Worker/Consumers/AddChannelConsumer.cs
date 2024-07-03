@@ -1,4 +1,6 @@
-﻿using Google.Apis.YouTube.v3;
+﻿using System.Net;
+using Google;
+using Google.Apis.YouTube.v3;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using VUta.Database;
@@ -50,7 +52,7 @@ public class AddChannelConsumer
             }
 
             var listResponse = await listRequest.ExecuteAsync(context.CancellationToken);
-            if (listResponse.Items.FirstOrDefault() is { } channel)
+            if (listResponse.Items?.FirstOrDefault() is { } channel)
             {
                 var result = await _db.Channels
                     .Upsert(new Database.Models.Channel
@@ -72,15 +74,22 @@ public class AddChannelConsumer
                     await context.Publish(new ScanChannelVideo(channel.Id, true), context.CancellationToken);
                 else
                     await context.Publish(new UpdateChannel(channel.Id, true));
-                
+
                 if (context.IsResponseAccepted<AddChannelResult>())
                     await context.RespondAsync(new AddChannelResult(
                         !added, new AddChannelResultInfo(
                             channel.Snippet.Title,
                             channel.Snippet.Thumbnails.Default__.Url)));
             }
+
+            else
+            {
+                _logger.LogWarning("Adding not exists channel ({Id})", id);
+                if (context.IsResponseAccepted<AddChannelResult>())
+                    await context.RespondAsync(new AddChannelResult(false, null, $"Target channel not exists: {id}"));
+            }
         }
-        catch (ChannelUnavailableException ex)
+        catch (Exception ex)
         {
             _logger.LogWarning(ex, "An error occurred while adding channel");
             if (context.IsResponseAccepted<AddChannelResult>())
