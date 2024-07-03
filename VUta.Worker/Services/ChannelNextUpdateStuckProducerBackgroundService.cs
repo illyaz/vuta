@@ -10,11 +10,11 @@ namespace VUta.Worker.Services;
 public class ChannelNextUpdateStuckProducerBackgroundService : BackgroundService
 {
     private readonly IBus _bus;
-    private readonly ILogger<ChannelNextUpdateProducerBackgroundService> _logger;
+    private readonly ILogger<ChannelNextUpdateStuckProducerBackgroundService> _logger;
     private readonly IServiceProvider _serviceProvider;
 
     public ChannelNextUpdateStuckProducerBackgroundService(
-        ILogger<ChannelNextUpdateProducerBackgroundService> logger,
+        ILogger<ChannelNextUpdateStuckProducerBackgroundService> logger,
         IBus bus,
         IServiceProvider serviceProvider)
     {
@@ -44,11 +44,9 @@ public class ChannelNextUpdateStuckProducerBackgroundService : BackgroundService
             {
                 var db = scope.ServiceProvider.GetRequiredService<VUtaDbContext>();
                 using var T = await db.Database.BeginTransactionAsync(stoppingToken);
+
                 var updateChannels = await db.Channels
-                    .Where(x => db.Channels
-                                    .Where(sc => sc.NextUpdate != null && sc.NextUpdateId == null)
-                                    .Select(sc => sc.NextUpdate).FirstOrDefault() - TimeSpan.FromHours(1) > x.NextUpdate
-                                && x.NextUpdateId != null)
+                    .Where(sc => sc.NextUpdate != null && DateTime.UtcNow - TimeSpan.FromHours(1) > sc.NextUpdate)
                     .Take(1000)
                     .For().Update().SkipLocked()
                     .ToDictionaryAsync(k => k.Id, v => v, stoppingToken);
@@ -57,13 +55,18 @@ public class ChannelNextUpdateStuckProducerBackgroundService : BackgroundService
                 {
                     _logger.LogWarning("Requeue {Count} stucked {Type} update", updateChannels.Count, nameof(Channel));
 
+                    var date = DateTime.UtcNow;
                     foreach (var (id, channel) in updateChannels)
+                    {
                         channel.NextUpdateId = NewId.NextGuid();
+                        channel.NextUpdate = date;
+                    }
 
                     await db.SaveChangesAsync(stoppingToken);
                     await T.CommitAsync(stoppingToken);
                     await _bus.PublishBatch(updateChannels.Select(x => new UpdateChannel(x.Key, true)),
-                        c => c.CorrelationId = updateChannels[c.Message.Id].NextUpdateId);
+                        c => c.CorrelationId = updateChannels[c.Message.Id].NextUpdateId,
+                        cancellationToken: stoppingToken);
 
                     if (updateChannels.Count >= 1000)
                         continue;

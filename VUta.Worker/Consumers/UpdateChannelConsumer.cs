@@ -1,9 +1,8 @@
-﻿using MassTransit;
+﻿using Google.Apis.YouTube.v3;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using VUta.Database;
 using VUta.Transport.Messages;
-using YoutubeExplode;
-using YoutubeExplode.Exceptions;
 
 namespace VUta.Worker.Consumers;
 
@@ -12,12 +11,12 @@ public class UpdateChannelConsumer
 {
     private readonly VUtaDbContext _db;
     private readonly ILogger<UpdateChannelConsumer> _logger;
-    private readonly YoutubeClient _youtube;
+    private readonly YouTubeService _youtube;
 
     public UpdateChannelConsumer(
         ILogger<UpdateChannelConsumer> logger,
         VUtaDbContext db,
-        YoutubeClient youtube)
+        YouTubeService youtube)
     {
         _logger = logger;
         _db = db;
@@ -45,24 +44,29 @@ public class UpdateChannelConsumer
         var lastVideoPublish = result?.LastVideoPublishDate;
         if (channel?.NextUpdateId != context.CorrelationId)
         {
-            _logger.LogWarning("Update id not matched", id);
+            _logger.LogWarning("Update id not matched: {Id}", context.CorrelationId);
             return;
         }
 
         if (channel != null)
         {
-            try
-            {
-                var channelMeta = await _youtube.Channels
-                    .GetInnertubeAsync(id, context.CancellationToken);
+            var listRequest = _youtube.Channels.List(new[] { "snippet", "statistics", "brandingSettings" });
+            listRequest.Id = id;
+            var listResponse = await listRequest.ExecuteAsync(context.CancellationToken);
 
-                channel.Title = channelMeta.Title;
-                channel.Description = channelMeta.Description;
-                channel.VideoCount = channelMeta.VideoCount ?? 0;
-                channel.SubscriberCount = channelMeta.SubscriberCount;
-                channel.Thumbnail = channelMeta.Thumbnails[0].Url;
-                channel.Banner = channelMeta.Banners.LastOrDefault()?.Url;
-                channel.Handle = channelMeta.Handle;
+            if (listResponse.Items?.FirstOrDefault() is { } channelResponse)
+            {
+                channel.Title = channelResponse.Snippet.Title;
+                channel.Description = channelResponse.Snippet.Description;
+                channel.VideoCount = (long)(channelResponse.Statistics.VideoCount ?? 0);
+                channel.SubscriberCount = (long?)channelResponse.Statistics.SubscriberCount;
+                channel.Thumbnail = channelResponse.Snippet.Thumbnails.Default__.Url;
+                channel.Banner = channelResponse.BrandingSettings.Image?.BannerExternalUrl;
+                channel.Handle = string.IsNullOrEmpty(channelResponse.Snippet.CustomUrl)
+                    ? null
+                    : channelResponse.Snippet.CustomUrl.StartsWith("@")
+                        ? channelResponse.Snippet.CustomUrl[1..]
+                        : channelResponse.Snippet.CustomUrl;
 
                 if (lastVideoPublish > DateTime.UtcNow.AddDays(-2))
                     channel.NextUpdate = DateTime.UtcNow.AddHours(1);
@@ -78,7 +82,7 @@ public class UpdateChannelConsumer
                 channel.UnavailableSince = null;
                 exists = true;
             }
-            catch (ChannelUnavailableException)
+            else
             {
                 channel.UnavailableSince ??= DateTime.UtcNow;
                 if (channel.UnavailableSince > DateTime.UtcNow.AddDays(-30))

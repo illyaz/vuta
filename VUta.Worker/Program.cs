@@ -1,5 +1,7 @@
 ﻿using System.Net;
 using System.Text;
+using Google.Apis.Services;
+using Google.Apis.YouTube.v3;
 using MassTransit;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -18,6 +20,7 @@ public class Program
         Console.OutputEncoding = Encoding.UTF8;
         var host = Host.CreateDefaultBuilder(args)
             .UseSerilog((host, log) => log.ReadFrom.Configuration(host.Configuration, "Logging"))
+            .ConfigureAppConfiguration(c => c.AddJsonFile("appsettings.Local.json", true, true))
             .ConfigureServices((host, services) =>
             {
                 services.AddVUtaDbContext(host.Configuration.GetConnectionString("Default"));
@@ -54,7 +57,11 @@ public class Program
                     mt.AddConsumer<ScanChannelVideoConsumer>();
                     mt.AddConsumer<ScanVideoCommentConsumer>();
                     mt.AddConsumer<UpdateChannelConsumer>();
-                    mt.AddConsumer<UpdateVideoConsumer>();
+                    mt.AddConsumer<UpdateVideoConsumer>(c => c
+                        .Options<BatchOptions>(o => o
+                            .SetTimeLimit(TimeSpan.FromSeconds(1))
+                            .SetMessageLimit(25)
+                            .SetConcurrencyLimit(10)));
                     mt.AddConsumer<AddChannelConsumer>();
                 });
 
@@ -68,6 +75,12 @@ public class Program
                 services.AddHostedService<VideoNextUpdateStuckProducerBackgroundService>();
                 services.AddHostedService<ChannelNextUpdateProducerBackgroundService>();
                 services.AddHostedService<ChannelNextUpdateStuckProducerBackgroundService>();
+                services.AddSingleton<VUtaHttpClientFactory>();
+                services.AddSingleton(s => new YouTubeService(new BaseClientService.Initializer
+                {
+                    ApiKey = s.GetRequiredService<IOptions<WorkerOptions>>().Value.YoutubeApiKey,
+                    HttpClientFactory = s.GetRequiredService<VUtaHttpClientFactory>()
+                }));
             })
             .Build();
 

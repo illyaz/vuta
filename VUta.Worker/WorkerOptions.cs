@@ -20,6 +20,8 @@ public class WorkerOptions
     [Required] public ProducerEntry Producer { get; set; } = new();
 
     [Required] public bool ElasticsearchSync { get; set; } = true;
+    [Required] public string YoutubeApiKey { get; set; } = default!;
+    [Required] public string[] YoutubeInterceptActions { get; set; } = [];
 
     public class ProducerEntry
     {

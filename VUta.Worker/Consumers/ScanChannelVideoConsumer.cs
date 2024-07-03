@@ -1,4 +1,7 @@
-﻿using MassTransit;
+﻿using System.Net;
+using Google;
+using Google.Apis.YouTube.v3;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using VUta.Database;
 using VUta.Database.Models;
@@ -13,12 +16,12 @@ public class ScanChannelVideoConsumer
 {
     private readonly VUtaDbContext _db;
     private readonly ILogger<ScanChannelVideoConsumer> _logger;
-    private readonly YoutubeClient _youtube;
+    private readonly YouTubeService _youtube;
 
     public ScanChannelVideoConsumer(
         ILogger<ScanChannelVideoConsumer> logger,
         VUtaDbContext db,
-        YoutubeClient youtube)
+        YouTubeService youtube)
     {
         _logger = logger;
         _db = db;
@@ -33,39 +36,51 @@ public class ScanChannelVideoConsumer
         var firstBatch = true;
         try
         {
-            await foreach (var batch in _youtube.Playlists.GetVideoBatchesAsync(uploadPlaylistId,
-                               context.CancellationToken))
+            var listRequest = _youtube.PlaylistItems.List("snippet");
+            listRequest.PlaylistId = uploadPlaylistId;
+            listRequest.MaxResults = 50;
+            listRequest.Fields = "nextPageToken,items.snippet(title,resourceId.videoId,videoOwnerChannelId)";
+
+            while (true)
             {
+                var listResponse = await listRequest.ExecuteAsync(context.CancellationToken);
                 firstBatch = false;
+                
                 _logger.LogInformation("Playlist scanned: {ChannelId}, {LastId}", uploadPlaylistId,
-                    batch.Items.Last().Id);
-                var videoIds = batch.Items.Select(x => (string)x.Id).ToArray();
+                    listResponse.Items.Last().Snippet.ResourceId.VideoId);
+
+                var videoIds = listResponse.Items.Select(x => x.Snippet.ResourceId.VideoId).ToArray();
                 var existsIds = await _db.Videos
                     .Where(x => videoIds.Contains(x.Id))
                     .Select(x => x.Id)
                     .ToListAsync(context.CancellationToken);
 
-                foreach (var video in batch.Items.Where(x => !existsIds.Contains(x.Id)))
+                foreach (var video in listResponse.Items.Where(x => !existsIds.Contains(x.Snippet.ResourceId.VideoId)))
                 {
                     _db.Videos.Add(new Video
                     {
-                        Id = video.Id,
-                        Title = video.Title,
-                        ChannelId = video.Author.ChannelId,
+                        Id = video.Snippet.ResourceId.VideoId,
+                        Title = video.Snippet.Title,
+                        ChannelId = video.Snippet.VideoOwnerChannelId,
                         PublishDate = DateTime.MinValue
                     });
-                    addedIds.Add(video.Id);
+                    addedIds.Add(video.Snippet.ResourceId.VideoId);
                 }
 
                 if (!fullScan && existsIds.Any())
                     break;
+
+                if (string.IsNullOrEmpty(listResponse.NextPageToken))
+                    break;
+
+                listRequest.PageToken = listResponse.NextPageToken;
             }
         }
-        catch (PlaylistUnavailableException) when (firstBatch)
+        catch (GoogleApiException e) when (firstBatch && e.HttpStatusCode == HttpStatusCode.NotFound)
         {
             _logger.LogWarning("Playlist {Id} not unavailable", uploadPlaylistId);
         }
-
+        
         if (addedIds.Any())
         {
             await _db.SaveChangesAsync();

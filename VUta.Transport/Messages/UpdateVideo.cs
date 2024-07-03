@@ -2,4 +2,5 @@
 
 public record UpdateVideo(
     string Id,
-    bool ScanComment = false);
+    bool ScanComment = false,
+    Guid? CorrelationId = null);
