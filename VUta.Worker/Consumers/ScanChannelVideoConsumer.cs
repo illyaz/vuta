@@ -3,6 +3,7 @@ using Google;
 using Google.Apis.YouTube.v3;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using VUta.Database;
 using VUta.Database.Models;
 using VUta.Transport.Messages;
@@ -45,7 +46,7 @@ public class ScanChannelVideoConsumer
             {
                 var listResponse = await listRequest.ExecuteAsync(context.CancellationToken);
                 firstBatch = false;
-                
+
                 _logger.LogInformation("Playlist scanned: {ChannelId}, {LastId}", uploadPlaylistId,
                     listResponse.Items.Last().Snippet.ResourceId.VideoId);
 
@@ -80,10 +81,42 @@ public class ScanChannelVideoConsumer
         {
             _logger.LogWarning("Playlist {Id} not unavailable", uploadPlaylistId);
         }
-        
+
         if (addedIds.Any())
         {
-            await _db.SaveChangesAsync();
+            try
+            {
+                await _db.SaveChangesAsync(context.CancellationToken);
+            }
+            catch (DbUpdateException dbe)
+                when (dbe.InnerException is PostgresException
+                      {
+                          SqlState: PostgresErrorCodes.ForeignKeyViolation,
+                          ConstraintName: "fk_videos_channels_channel_id"
+                      })
+            {
+                if (dbe.Entries
+                        .Select(x => x.Entity)
+                        .OfType<Video>().Select(x => x.ChannelId)
+                        .Distinct()
+                        .FirstOrDefault(x => x != channelId) is
+                    { } anotherChannelId)
+                {
+                    _db.Channels.Add(new Channel
+                    {
+                        Id = anotherChannelId,
+                        Title = "Unknown",
+                        Description = string.Empty,
+                        Thumbnail = string.Empty,
+                        NextUpdate = DateTime.UtcNow
+                    });
+
+                    await _db.SaveChangesAsync(context.CancellationToken);
+                }
+                else
+                    throw;
+            }
+
             await context.PublishBatch(addedIds.Select(id => new UpdateVideo(id, true)));
         }
     }
