@@ -1,23 +1,25 @@
-﻿using MassTransit;
+﻿using System.Text.RegularExpressions;
+using Google;
+using Google.Apis.YouTube.v3;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using VUta.Database;
 using VUta.Transport.Messages;
-using YoutubeExplode;
-using YoutubeExplode.Videos;
+using Video = VUta.Database.Models.Video;
 
 namespace VUta.Worker.Consumers;
 
-public class ScanVideoCommentConsumer :
+public partial class ScanVideoCommentConsumer :
     IConsumer<ScanVideoComment>
 {
     private readonly VUtaDbContext _db;
     private readonly ILogger<ScanVideoCommentConsumer> _logger;
-    private readonly YoutubeClient _youtube;
+    private readonly YouTubeService _youtube;
 
     public ScanVideoCommentConsumer(
         ILogger<ScanVideoCommentConsumer> logger,
         VUtaDbContext db,
-        YoutubeClient youtube)
+        YouTubeService youtube)
     {
         _logger = logger;
         _db = db;
@@ -27,31 +29,25 @@ public class ScanVideoCommentConsumer :
     public async Task Consume(ConsumeContext<ScanVideoComment> context)
     {
         var id = context.Message.Id;
-        var continuation = await _youtube.Videos.GetCommentTokenAsync(id, context.CancellationToken);
-        if (continuation != null)
+        try
         {
-            var timestampComments = new List<Comment>();
+            var listRequest = _youtube.CommentThreads.List(new[] { "snippet", "replies" });
+            listRequest.VideoId = id;
+            listRequest.Order = CommentThreadsResource.ListRequest.OrderEnum.Relevance;
+            listRequest.MaxResults = 100;
+            listRequest.Fields =
+                "items(snippet.topLevelComment(id,snippet(parentId,textOriginal,likeCount)),replies.comments(id,snippet(parentId,textOriginal,likeCount)))";
 
-            // Limit 2 batches approximately 35 - 40 comments
-            var count = 0;
-            while (continuation != null && count++ < 2)
-            {
-                var batch = await _youtube.Videos
-                    .GetCommentBatchAsync(continuation, context.CancellationToken);
-
-                timestampComments.AddRange(batch.Comments
-                    .Where(x => x.Runs.Any(r => TryParseTimestamp(r, out _))
-                                && !timestampComments.Any(y => y.Id == x.Id)
-                                // Filtered timestamp only comment
-                                && !x.Runs
-                                    .Where(x => x.Trim() != string.Empty)
-                                    .All(r => TryParseTimestamp(r, out _))
-                                && x.Runs
-                                    .Where(x => x.Trim() != string.Empty)
-                                    .Count(r => TryParseTimestamp(r, out _)) > 2));
-
-                continuation = batch.Continuation;
-            }
+            var listResponse = await listRequest.ExecuteAsync();
+            var timestampComments = listResponse.Items
+                .Select(x => x.Snippet.TopLevelComment)
+                .Concat(listResponse.Items.SelectMany(x => x.Replies?.Comments ?? []))
+                .Where(x => TimestampRegex()
+                    .Matches(x.Snippet.TextOriginal)
+                    .Where(m => m.Success && TryParseTimestamp(m.Value, out _))
+                    .Take(2)
+                    .Count() == 2)
+                .ToList();
 
             if (timestampComments.Any())
                 await _db.Comments
@@ -60,10 +56,10 @@ public class ScanVideoCommentConsumer :
                         {
                             Id = comment.Id,
                             VideoId = id,
-                            LikeCount = comment.LikeCount,
-                            RepliesId = comment.RepliesId,
+                            LikeCount = comment.Snippet.LikeCount ?? 0,
                             LastUpdate = DateTime.UtcNow,
-                            Text = string.Join("", comment.Runs)
+                            RepliesId = comment.Snippet.ParentId,
+                            Text = comment.Snippet.TextOriginal.Replace("\0", string.Empty)
                         }))
                     .AllowIdentityMatch()
                     .WhenMatched((ds, dsi) => new Database.Models.Comment
@@ -74,17 +70,23 @@ public class ScanVideoCommentConsumer :
                         LastUpdate = dsi.LastUpdate
                     })
                     .RunAsync(context.CancellationToken);
-        }
-        else
-        {
-            _logger.LogDebug("Video comment {Id} not exists", id);
-        }
 
-        var video = await _db.Videos.FindAsync(id, context.CancellationToken);
-        if (video != null)
-        {
+            var video = _db.Attach(new Video { Id = id }).Entity;
             video.LastCommentScan = DateTime.UtcNow;
             await _db.SaveChangesAsync(context.CancellationToken);
+        }
+        catch (GoogleApiException gae)
+        {
+            var errors = gae.Error.Errors.Select(x => x.Reason)
+                .Where(x => x != "commentsDisabled" && x != "forbidden" && x != "videoNotFound")
+                .ToArray();
+
+            if (errors.Any())
+            {
+                _logger.LogDebug("Video {VideoId} comment error: {Reasons}", id,
+                    gae.Error.Errors.Select(x => x.Reason));
+                throw;
+            }
         }
     }
 
@@ -96,4 +98,7 @@ public class ScanVideoCommentConsumer :
             @"h\:m\:ss"
         }, null, out result);
     }
+
+    [GeneratedRegex("[0-9]{1,2}(\\:[0-9]{1,2})?\\:[0-9]{2}")]
+    private static partial Regex TimestampRegex();
 }
