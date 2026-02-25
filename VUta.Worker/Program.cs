@@ -43,11 +43,6 @@ public class Program
                         {
                             h.Username(opts.Username ?? "guest");
                             h.Password(opts.Password ?? "guest");
-                            h.ConfigureBatchPublish(x =>
-                            {
-                                x.Enabled = true;
-                                x.Timeout = TimeSpan.FromMilliseconds(2);
-                            });
                         });
 
                         cfg.PrefetchCount = opts.Prefetch;

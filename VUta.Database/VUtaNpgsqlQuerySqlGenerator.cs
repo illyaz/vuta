@@ -1,19 +1,19 @@
 ﻿using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Query.Internal;
 
 namespace VUta.Database;
 
-public class VUtaNpgsqlQuerySqlGenerator : NpgsqlQuerySqlGenerator
+public class VUtaNpgsqlQuerySqlGenerator(
+    QuerySqlGeneratorDependencies dependencies,
+    IRelationalTypeMappingSource typeMappingSource,
+    bool reverseNullOrderingEnabled,
+    Version postgresVersion)
+    : NpgsqlQuerySqlGenerator(dependencies, typeMappingSource, reverseNullOrderingEnabled, postgresVersion)
 {
     private string? forQuery;
 
-    public VUtaNpgsqlQuerySqlGenerator(
-        QuerySqlGeneratorDependencies dependencies,
-        bool reverseNullOrderingEnabled, Version postgresVersion)
-        : base(dependencies, reverseNullOrderingEnabled, postgresVersion)
-    {
-    }
 
     protected override void GenerateTagsHeaderComment(ISet<string> tags)
     {

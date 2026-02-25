@@ -1,11 +1,11 @@
 #See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY ["VUta.Api/VUta.Api.csproj", "VUta.Api/"]
 COPY ["VUta.Database/VUta.Database.csproj", "VUta.Database/"]
@@ -22,7 +22,7 @@ FROM base AS final
 
 # OpenCV dependencies
 RUN apt update && \
-	apt -y install libgeotiff-dev libdc1394-dev libavcodec-dev libswscale-dev libavformat-dev libgtk-3-dev libvtk9 && \
+	apt -y install libgeotiff-dev libdc1394-dev libavcodec-dev libswscale-dev libavformat-dev libgtk-3-dev libvtk9.1t64 && \
 	rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
